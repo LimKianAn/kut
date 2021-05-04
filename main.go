@@ -17,6 +17,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
+const defaultKubeconfig = "~/.kube/config"
+
 var (
 	rootCmd = &cobra.Command{
 		Use:          "kut",
@@ -30,7 +32,7 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringP("kubeconfig", "k", "~/.kube/config", "path to input kubeconfig")
+	rootCmd.Flags().StringP("kubeconfig", "k", "", "path to input kubeconfig (first the flag, then env KUBECONFIG, at last "+defaultKubeconfig)
 	rootCmd.Flags().StringP("context", "c", "", "target context")
 
 	if err := rootCmd.MarkFlagRequired("context"); err != nil {
@@ -82,6 +84,12 @@ func rootCmdRunE(cmd *cobra.Command, args []string) error {
 
 func kubeconfigPath() (string, error) {
 	path := viper.GetString("kubeconfig")
+	if path == "" {
+		path = os.Getenv("KUBECONFIG")
+		if path == "" {
+			path = defaultKubeconfig
+		}
+	}
 	if strings.Contains(path, "~") {
 		home, err := os.UserHomeDir()
 		if err != nil {
